@@ -27,6 +27,16 @@ h2 {
   margin-bottom: 15px;
 }
 
+.form-group input[type="checkbox"] {
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.form-group label {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 label {
   display: block;
   margin-bottom: 5px;

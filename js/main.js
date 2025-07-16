@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sourceModelSelect = document.getElementById("source-model");
   const destModelSelect = document.getElementById("dest-model");
   const numCardsInput = document.getElementById("num-cards");
+  const onlyMatureCheckbox = document.getElementById("only-mature-cards");
   const fieldMappingSection = document.getElementById("field-mapping-section");
   const fieldMappingUi = document.getElementById("field-mapping-ui");
   const generateCardsButton = document.getElementById("generate-cards");
@@ -23,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sourceModel: sourceModelSelect.value,
       destModel: destModelSelect.value,
       numCards: numCardsInput.value,
+      onlyMature: onlyMatureCheckbox.checked,
       fieldMappings: getFieldMappingsFromUi(),
     };
     localStorage.setItem("ankiCardGeneratorConfig", JSON.stringify(config));
@@ -51,6 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
     sourceModelSelect.value = config.sourceModel || "";
     destModelSelect.value = config.destModel || "";
     numCardsInput.value = config.numCards || 10;
+    // Default to true if not present in saved config
+    onlyMatureCheckbox.checked = config.onlyMature !== false;
 
     // Update field mapping UI based on selected models
     await updateFieldMapping();
@@ -192,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const sourceModel = sourceModelSelect.value;
       const destModel = destModelSelect.value;
       const numCards = parseInt(numCardsInput.value, 10);
+      const onlyMature = onlyMatureCheckbox.checked;
 
       if (
         !sourceDeck ||
@@ -204,16 +209,18 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      log(
-        `Finding mature cards in deck "${sourceDeck}" of type "${sourceModel}"...`
-      );
+      log(`Finding cards in deck "${sourceDeck}" of type "${sourceModel}"...`);
       const matureCardSelector = `("is:review" -"is:learn") AND "prop:ivl>=21"AND -("is:buried" OR "is:suspended")`;
-      const query = `deck:"${sourceDeck}" note:"${sourceModel}" ${matureCardSelector}`;
+      let query = `deck:"${sourceDeck}" note:"${sourceModel}"`;
+      if (onlyMature) {
+        query += ` ${matureCardSelector}`;
+        log("Filtering for mature cards only.");
+      }
       let cardIds = await anki.findCards(query);
-      log(`Found ${cardIds.length} potential mature source cards.`);
+      log(`Found ${cardIds.length} potential source cards.`);
 
       if (cardIds.length === 0) {
-        log("No matching mature cards found.");
+        log("No matching cards found.");
         return;
       }
 
@@ -233,9 +240,17 @@ document.addEventListener("DOMContentLoaded", () => {
         log("No field mappings configured. Aborting.");
         return;
       }
+      const duplicateCheckField = fieldMappings[Object.keys(fieldMappings)[0]];
+      log(`Using field "${duplicateCheckField}" for duplicate checks.`);
 
       let createdCount = 0;
       for (const sourceNote of notesInfo) {
+        // Skip this note if it doesn't have the required field
+        if (!sourceNote.fields || !sourceNote.fields[duplicateCheckField]) {
+          log(`Skipping note due to missing field "${duplicateCheckField}".`);
+          continue;
+        }
+
         const newNote = {
           deckName: destDeck,
           modelName: destModel,
@@ -246,6 +261,21 @@ document.addEventListener("DOMContentLoaded", () => {
         for (const [destField, sourceField] of Object.entries(fieldMappings)) {
           if (sourceNote.fields[sourceField]) {
             newNote.fields[destField] = sourceNote.fields[sourceField].value;
+          }
+        }
+
+        // Check for duplicates before adding
+        const duplicateCheckValue = newNote.fields[duplicateCheckField];
+        if (duplicateCheckValue) {
+          const escapedValue = duplicateCheckValue.replace(/"/g, '\\"');
+          const duplicateQuery = `deck:"${destDeck}" note:"${destModel}" "${duplicateCheckField}:${escapedValue}"`;
+          const duplicateIds = await anki.findCards(duplicateQuery);
+
+          if (duplicateIds.length > 0) {
+            log(
+              `Skipping note ID ${sourceNote.noteId}, duplicate already exists.`
+            );
+            continue; // Skip to the next note
           }
         }
 
@@ -261,6 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       log(`Finished. Successfully created ${createdCount} cards.`);
     } catch (e) {
+      console.error(e);
       log(`An error occurred: ${e.message}`);
     } finally {
       generateCardsButton.disabled = false;
@@ -275,6 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
   sourceDeckSelect.addEventListener("change", saveConfiguration);
   destDeckSelect.addEventListener("change", saveConfiguration);
   numCardsInput.addEventListener("change", saveConfiguration);
+  onlyMatureCheckbox.addEventListener("change", saveConfiguration);
   fieldMappingUi.addEventListener("change", (e) => {
     if (e.target.tagName === "SELECT") {
       saveConfiguration();
