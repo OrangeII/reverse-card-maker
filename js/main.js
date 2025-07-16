@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const destModelSelect = document.getElementById("dest-model");
   const numCardsInput = document.getElementById("num-cards");
   const onlyMatureCheckbox = document.getElementById("only-mature-cards");
+  const shuffleCheckbox = document.getElementById("shuffle-cards");
   const fieldMappingSection = document.getElementById("field-mapping-section");
   const fieldMappingUi = document.getElementById("field-mapping-ui");
   const generateCardsButton = document.getElementById("generate-cards");
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
       destModel: destModelSelect.value,
       numCards: numCardsInput.value,
       onlyMature: onlyMatureCheckbox.checked,
+      shuffleCards: shuffleCheckbox.checked,
       fieldMappings: getFieldMappingsFromUi(),
     };
     localStorage.setItem("ankiCardGeneratorConfig", JSON.stringify(config));
@@ -55,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     numCardsInput.value = config.numCards || 10;
     // Default to true if not present in saved config
     onlyMatureCheckbox.checked = config.onlyMature !== false;
+    shuffleCheckbox.checked = config.shuffleCards !== false;
 
     // Update field mapping UI based on selected models
     await updateFieldMapping();
@@ -197,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const destModel = destModelSelect.value;
       const numCards = parseInt(numCardsInput.value, 10);
       const onlyMature = onlyMatureCheckbox.checked;
+      const shuffleCards = shuffleCheckbox.checked;
 
       if (
         !sourceDeck ||
@@ -224,10 +228,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Shuffle the card IDs to pick randomly
-      for (let i = cardIds.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [cardIds[i], cardIds[j]] = [cardIds[j], cardIds[i]];
+      // Shuffle the card IDs to pick randomly if option is selected
+      if (shuffleCards) {
+        log("Shuffling source cards for random selection.");
+        for (let i = cardIds.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cardIds[i], cardIds[j]] = [cardIds[j], cardIds[i]];
+        }
       }
 
       const cardsToProcessIds = cardIds.slice(0, numCards);
@@ -307,6 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
   destDeckSelect.addEventListener("change", saveConfiguration);
   numCardsInput.addEventListener("change", saveConfiguration);
   onlyMatureCheckbox.addEventListener("change", saveConfiguration);
+  shuffleCheckbox.addEventListener("change", saveConfiguration);
   fieldMappingUi.addEventListener("change", (e) => {
     if (e.target.tagName === "SELECT") {
       saveConfiguration();
