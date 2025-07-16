@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anki Card Generator</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <h1>Anki Card Generator</h1>
+
+    <div class="container">
+      <div class="settings-section">
+        <h2>Settings</h2>
+
+        <div class="form-group">
+          <label for="source-deck">Source Deck (A):</label>
+          <select id="source-deck" class="deck-select"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="dest-deck">Destination Deck (B):</label>
+          <select id="dest-deck" class="deck-select"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="source-model">Source Card Type:</label>
+          <select id="source-model"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="dest-model">Destination Card Type:</label>
+          <select id="dest-model"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="num-cards">Number of cards to generate:</label>
+          <input type="number" id="num-cards" value="10" min="1" />
+        </div>
+      </div>
+
+      <div
+        id="field-mapping-section"
+        class="settings-section"
+        style="display: none"
+      >
+        <h2>Field Mapping</h2>
+        <p>Map source fields to destination fields.</p>
+        <div id="field-mapping-ui"></div>
+      </div>
+
+      <div class="action-section">
+        <button id="generate-cards">Generate Cards</button>
+      </div>
+
+      <div class="status-section">
+        <h2>Log</h2>
+        <div id="log-output" class="log-box"></div>
+      </div>
+    </div>
+
+    <script src="js/ankiconnect.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
