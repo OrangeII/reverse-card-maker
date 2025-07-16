@@ -16,6 +16,63 @@ document.addEventListener("DOMContentLoaded", () => {
     logOutput.scrollTop = logOutput.scrollHeight;
   }
 
+  function saveConfiguration() {
+    const config = {
+      sourceDeck: sourceDeckSelect.value,
+      destDeck: destDeckSelect.value,
+      sourceModel: sourceModelSelect.value,
+      destModel: destModelSelect.value,
+      numCards: numCardsInput.value,
+      fieldMappings: getFieldMappingsFromUi(),
+    };
+    localStorage.setItem("ankiCardGeneratorConfig", JSON.stringify(config));
+  }
+
+  async function loadConfiguration() {
+    const configString = localStorage.getItem("ankiCardGeneratorConfig");
+    if (!configString) {
+      log("No saved configuration found.");
+      // Initial population if no config
+      await populateDecks();
+      await populateModels();
+      return;
+    }
+
+    log("Loading saved configuration...");
+    const config = JSON.parse(configString);
+
+    // Populate dropdowns first
+    await populateDecks();
+    await populateModels();
+
+    // Set values from config
+    sourceDeckSelect.value = config.sourceDeck || "";
+    destDeckSelect.value = config.destDeck || "";
+    sourceModelSelect.value = config.sourceModel || "";
+    destModelSelect.value = config.destModel || "";
+    numCardsInput.value = config.numCards || 10;
+
+    // Update field mapping UI based on selected models
+    await updateFieldMapping();
+
+    // Apply saved field mappings
+    if (config.fieldMappings) {
+      Object.entries(config.fieldMappings).forEach(
+        ([destField, sourceField]) => {
+          const select = fieldMappingUi.querySelector(
+            `select[data-dest-field="${destField}"]`
+          );
+          if (select) {
+            select.value = sourceField;
+          }
+        }
+      );
+      log("Field mappings restored.");
+    }
+
+    log("Configuration loaded.");
+  }
+
   async function populateDecks() {
     try {
       const deckNames = await anki.getDeckNames();
@@ -55,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         destModelSelect.appendChild(option2);
       });
       log("Card types loaded.");
-      updateFieldMapping();
+      // Don't call updateFieldMapping here, loadConfiguration will handle it.
     } catch (e) {
       log(`Error loading card types: ${e.message}`);
     }
@@ -108,10 +165,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       fieldMappingSection.style.display = "block";
       log("Field mapping UI updated.");
+      saveConfiguration(); // Save config when mapping UI is updated
     } catch (e) {
       log(`Error updating field mapping: ${e.message}`);
       fieldMappingSection.style.display = "none";
     }
+  }
+
+  function getFieldMappingsFromUi() {
+    const mappings = {};
+    fieldMappingUi.querySelectorAll("select").forEach((select) => {
+      if (select.value) {
+        mappings[select.dataset.destField] = select.value;
+      }
+    });
+    return mappings;
   }
 
   async function generateCards() {
@@ -136,26 +204,30 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      log(`Finding cards in deck "${sourceDeck}" of type "${sourceModel}"...`);
-      const query = `deck:"${sourceDeck}" note:"${sourceModel}"`;
-      const cardIds = await anki.findCards(query);
-      log(`Found ${cardIds.length} potential source cards.`);
+      log(
+        `Finding mature cards in deck "${sourceDeck}" of type "${sourceModel}"...`
+      );
+      const matureCardSelector = `("is:review" -"is:learn") AND "prop:ivl>=21"AND -("is:buried" OR "is:suspended")`;
+      const query = `deck:"${sourceDeck}" note:"${sourceModel}" ${matureCardSelector}`;
+      let cardIds = await anki.findCards(query);
+      log(`Found ${cardIds.length} potential mature source cards.`);
 
       if (cardIds.length === 0) {
-        log("No matching cards found.");
+        log("No matching mature cards found.");
         return;
       }
 
-      const notesInfo = await anki.notesInfo(cardIds);
-      const notesToProcess = notesInfo.slice(0, numCards);
-      log(`Processing ${notesToProcess.length} cards.`);
+      // Shuffle the card IDs to pick randomly
+      for (let i = cardIds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cardIds[i], cardIds[j]] = [cardIds[j], cardIds[i]];
+      }
 
-      const fieldMappings = {};
-      fieldMappingUi.querySelectorAll("select").forEach((select) => {
-        if (select.value) {
-          fieldMappings[select.dataset.destField] = select.value;
-        }
-      });
+      const cardsToProcessIds = cardIds.slice(0, numCards);
+      const notesInfo = await anki.notesInfo(cardsToProcessIds);
+      log(`Randomly selected ${notesInfo.length} cards to process.`);
+
+      const fieldMappings = getFieldMappingsFromUi();
 
       if (Object.keys(fieldMappings).length === 0) {
         log("No field mappings configured. Aborting.");
@@ -163,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       let createdCount = 0;
-      for (const sourceNote of notesToProcess) {
+      for (const sourceNote of notesInfo) {
         const newNote = {
           deckName: destDeck,
           modelName: destModel,
@@ -199,8 +271,17 @@ document.addEventListener("DOMContentLoaded", () => {
   destModelSelect.addEventListener("change", updateFieldMapping);
   generateCardsButton.addEventListener("click", generateCards);
 
+  // Add event listeners to save config on change
+  sourceDeckSelect.addEventListener("change", saveConfiguration);
+  destDeckSelect.addEventListener("change", saveConfiguration);
+  numCardsInput.addEventListener("change", saveConfiguration);
+  fieldMappingUi.addEventListener("change", (e) => {
+    if (e.target.tagName === "SELECT") {
+      saveConfiguration();
+    }
+  });
+
   // Initial population
   log("Connecting to AnkiConnect...");
-  populateDecks();
-  populateModels();
+  loadConfiguration();
 });
