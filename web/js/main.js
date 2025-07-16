@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const fieldMappingUi = document.getElementById("field-mapping-ui");
   const generateCardsButton = document.getElementById("generate-cards");
   const logOutput = document.getElementById("log-output");
+  const configurationSection = document.getElementById("configuration-section");
 
   function log(message) {
     logOutput.textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`;
@@ -190,8 +191,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function generateCards() {
-    log("Starting card generation...");
+    // ask the user to confirm before proceeding
+    if (
+      !confirm(
+        "Are you sure you want to generate cards? This will create new cards in the destination deck."
+      )
+    ) {
+      log("Card generation cancelled by user.");
+      return;
+    }
+
     generateCardsButton.disabled = true;
+    configurationSection.classList.add("disabled");
 
     try {
       const sourceDeck = sourceDeckSelect.value;
@@ -302,6 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
       log(`An error occurred: ${e.message}`);
     } finally {
       generateCardsButton.disabled = false;
+      configurationSection.classList.remove("disabled");
     }
   }
 

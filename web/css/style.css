@@ -87,3 +87,8 @@ button:hover {
   flex: 2;
   margin-left: 10px;
 }
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

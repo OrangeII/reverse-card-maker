@@ -10,59 +10,63 @@
     <h1>Anki Card Generator</h1>
 
     <div class="container">
-      <div class="settings-section">
-        <h2>Settings</h2>
+      <div id="configuration-section" class="settings-section">
+        <div class="settings-section">
+          <h2>Settings</h2>
 
-        <div class="form-group">
-          <label for="source-deck">Source Deck:</label>
-          <select id="source-deck" class="deck-select"></select>
+          <div class="form-group">
+            <label for="source-deck">Source Deck:</label>
+            <select id="source-deck" class="deck-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="dest-deck">Destination Deck:</label>
+            <select id="dest-deck" class="deck-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="source-model">Source Card Type:</label>
+            <select id="source-model"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="dest-model">Destination Card Type:</label>
+            <select id="dest-model"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="num-cards">Number of cards to generate:</label>
+            <input type="number" id="num-cards" value="10" min="1" />
+          </div>
+
+          <div class="form-group">
+            <input type="checkbox" id="only-mature-cards" checked />
+            <label for="only-mature-cards"
+              >Only generate from mature cards</label
+            >
+          </div>
+
+          <div class="form-group">
+            <input type="checkbox" id="shuffle-cards" checked />
+            <label for="shuffle-cards"
+              >Shuffle source cards (random selection)</label
+            >
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="dest-deck">Destination Deck:</label>
-          <select id="dest-deck" class="deck-select"></select>
+        <div
+          id="field-mapping-section"
+          class="settings-section"
+          style="display: none"
+        >
+          <h2>Field Mapping</h2>
+          <p>Map source fields to destination fields.</p>
+          <div id="field-mapping-ui"></div>
         </div>
 
-        <div class="form-group">
-          <label for="source-model">Source Card Type:</label>
-          <select id="source-model"></select>
+        <div class="action-section">
+          <button id="generate-cards">Generate Cards</button>
         </div>
-
-        <div class="form-group">
-          <label for="dest-model">Destination Card Type:</label>
-          <select id="dest-model"></select>
-        </div>
-
-        <div class="form-group">
-          <label for="num-cards">Number of cards to generate:</label>
-          <input type="number" id="num-cards" value="10" min="1" />
-        </div>
-
-        <div class="form-group">
-          <input type="checkbox" id="only-mature-cards" checked />
-          <label for="only-mature-cards">Only generate from mature cards</label>
-        </div>
-
-        <div class="form-group">
-          <input type="checkbox" id="shuffle-cards" checked />
-          <label for="shuffle-cards"
-            >Shuffle source cards (random selection)</label
-          >
-        </div>
-      </div>
-
-      <div
-        id="field-mapping-section"
-        class="settings-section"
-        style="display: none"
-      >
-        <h2>Field Mapping</h2>
-        <p>Map source fields to destination fields.</p>
-        <div id="field-mapping-ui"></div>
-      </div>
-
-      <div class="action-section">
-        <button id="generate-cards">Generate Cards</button>
       </div>
 
       <div class="status-section">
