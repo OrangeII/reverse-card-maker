@@ -16,6 +16,8 @@ from aqt.utils import showInfo
 from aqt.qt import QAction, QTimer
 from anki.hooks import addHook
 
+config = mw.addonManager.getConfig(__name__)
+
 
 class WebHandler(SimpleHTTPRequestHandler):
     """Custom HTTP handler for serving web files"""
@@ -45,7 +47,7 @@ class WebHandler(SimpleHTTPRequestHandler):
 class CardGeneratorServer:
     """Web server for the card generator interface"""
     
-    def __init__(self, port=8766):
+    def __init__(self, port=config['port']):
         self.port = port
         self.server = None
         self.thread = None
