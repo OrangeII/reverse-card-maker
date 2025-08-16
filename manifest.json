@@ -1,7 +1,7 @@
 {
   "name": "Anki Card Generator",
   "package": "make-reverse-cards",
-  "author": "Your Name",
+  "author": "OrangeII",
   "version": "1.0.0",
   "description": "A web-based tool for generating reverse cards from existing Anki cards",
   "min_anki_version": "2.1.0",
